@@ -10,12 +10,7 @@ resource "aws_instance" "App_Geocitizen" {
     tags = {
         Name = "App"
     }
-    user_data = <<EOF
-#!/bin/bash
-sudo apt update -y
-sudo apt install -y apache2
-echo "TEST" > /var/www/html/index.html
-EOF
+    user_data = file("user_data.sh")
 }
 
 resource "aws_instance" "DB_Geocitizen" {
@@ -96,14 +91,3 @@ resource "aws_security_group" "app_terraform" {
   }
 
 }
-
-# resource "local_file" "public_ip" {
-#     content = <<EOT
-# [app]
-# ${aws_instance.App_Geocitizen.public_ip}
-
-# [db]
-# ${aws_instance.DB_Geocitizen.public_ip}
-# EOT
-#     filename = "../ansible/hosts.txt"
-# }
