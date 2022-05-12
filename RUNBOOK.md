@@ -61,11 +61,10 @@ Commands for building and managing Geo Citizen Docker image whith supervisor:
 
 ## SonarQube prepares
 
-Official SonarQube repo with packages -> [binaries.sonarqube](https://binaries.sonarsource.com/?prefix=Distribution/sonarqube/)
+Official Sonarqube documentation -> [docs.sonarqube](https://docs.sonarqube.org/latest/)
+Official Sonarqube repo with packages -> [binaries.sonarsource](https://binaries.sonarsource.com/?prefix=Distribution/sonarqube/)
 
-Additional guide -> [vultr](https://www.vultr.com/docs/install-sonarqube-on-ubuntu-20-04-lts/)
-
-Main guide for SonarQube installation:
+Sonarqube installation:
 
   ```bash
   # update system
@@ -97,10 +96,10 @@ Main guide for SonarQube installation:
 
   ```bash
   
-  # download SonarQube - check 'Official SonarQube repo with packages'
+  # download SonarQube
   $ wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.4.0.54424.zip
 
-  # 'installation'
+  # installation
   $ sudo apt install unzip
   $ sudo unzip sonarqube-9.4.0.54424.zip -d /opt/
   $ sudo mv /opt/sonarqube-9.4.0.54424/ /opt/sonarqube
