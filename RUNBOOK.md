@@ -2,6 +2,7 @@
 Table of contents 
 - [Terratest](#terratest)
 - [SupervisorCTL](#supervisorCTL)
+- [SonarQube](#sonarQube)
 
 # Terratest
 
@@ -55,4 +56,160 @@ Commands for building and managing Geo Citizen Docker image whith supervisor:
   $ DOCKER_BUILDKIT=1 docker build . -t supervisor_geo
   # Docker run
   $ docker run --name supervisor_geo -p 9001:9001 -p 8080:8080 -d supervisor_geo:latest
+  ```
+# SonarQube
+
+## SonarQube prepares
+
+Official SonarQube repo with packages -> [binaries.sonarqube](https://binaries.sonarsource.com/?prefix=Distribution/sonarqube/)
+
+Additional guide -> [vultr](https://www.vultr.com/docs/install-sonarqube-on-ubuntu-20-04-lts/)
+
+Main guide for SonarQube installation:
+
+  ```bash
+  # update system
+  $ sudo apt-get update && sudo apt-get -y upgrade
+  
+  # openjdk installation
+  $ sudo apt install openjdk-11-jdk
+
+  # add PostgreSQL repo
+  $ sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+  $ wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | sudo apt-key add -
+
+  # install PostgreSQL
+  $ sudo apt -y install postgresql postgresql-contrib
+
+  # check postgres service
+  $ sudo systemctl status postgresql.service
+
+  $ sudo -i -u postgres psql
+  ```
+
+  ```sql
+  # ALTER ROLE postgres WITH PASSWORD 'your_pass';
+  # ALTER USER sonar WITH ENCRYPTED password 'your_pass';
+  # CREATE DATABASE sonar OWNER sonar;
+  # GRANT ALL PRIVILEGES ON DATABASE sonar TO sonar;
+  # \q
+  ```
+
+  ```bash
+  
+  # download SonarQube - check 'Official SonarQube repo with packages'
+  $ wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.4.0.54424.zip
+
+  # 'installation'
+  $ sudo apt install unzip
+  $ sudo unzip sonarqube-9.4.0.54424.zip -d /opt/
+  $ sudo mv /opt/sonarqube-9.4.0.54424/ /opt/sonarqube
+  
+  # configure sonar user
+  $ sudo groupadd sonar
+  $ sudo useradd -d /opt/sonarqube -g sonar sonar
+  $ sudo chown sonar:sonar /opt/sonarqube -R
+
+  # change properties of SonarQube
+  $ sudo nano /opt/sonarqube/conf/sonar.properties
+  ```
+
+  ```ini
+  # sonar.properties
+  sonar.jdbc.username=sonar
+  sonar.jdbc.password=sonar_pass
+  ...
+  sonar.jdbc.url=jdbc:postgresql://localhost:5432/sonarqube
+  ...
+  sonar.web.javaAdditionalOpts=-server
+  ```
+
+  ```bash
+  # edit SonarQube script
+  $ sudo nano /opt/sonarqube/bin/linux-x86-64/sonar.sh
+  ```
+
+  ```sh
+  # sonar.sh
+  RUN_AS_USER=sonar
+  ```
+
+  ```bash
+  # create service SonarQube
+  $ sudo nano /etc/systemd/system/sonar.service
+  ```
+
+  ```ini
+  # sonar.service
+  [Unit]
+  Description=SonarQube service
+  After=syslog.target network.target
+
+  [Service]
+  Type=forking
+
+  ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+  ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+
+  User=sonar
+  Group=sonar
+  Restart=always
+
+  [Install]
+  WantedBy=multi-user.target
+  ```
+
+  ```bash
+  # start + enable SonarQube
+  $ sudo systemctl enable --now sonar.service
+
+  # changes due to usage ElasticSearch by SonarQube
+  $ sudo nano /etc/sysctl.conf
+  ```
+
+  ```ini
+  # in sysctl.conf file
+
+  ###################################################################
+  # change sysctl.conf file for SonarQube due to ElasticSearch
+  vm.max_map_count=262144
+  fs.file-max=65536
+  ulimit -n 65536
+  ulimit -u 4096
+  ```
+
+Chech access web interfacec of SonarQube on http://public-ip-of-VM:9000/  
+Default credeantials: *login = admin, pass = admin* 
+
+## PostgreSQL configuration for Geocit134
+
+Create user and DBs for Geocit134 tests:
+
+  ```bash
+  $ sudo -i -u postgres psql
+  ```
+
+  ```sql
+  # CREATE USER geocitizen WITH PASSWORD 'your_pass';
+  # ALTER USER geocitizen CREATEDB;
+  # CREATE DATABASE geo;
+  # CREATE DATABASE geo_test;
+  # GRANT ALL PRIVILEGES ON DATABASE geo to geocitizen;
+  # GRANT ALL PRIVILEGES ON DATABASE geo_test to geocitizen;
+  ```
+
+Change pg_hba.conf:
+
+  ```bash
+  $ sudo nano /etc/postgresql/12/main/pg_hba.conf
+  ```
+
+  ```ini
+  # pg_hba.conf
+  local   all             all                              md5
+  ```
+
+Run Sonarqube:
+  ```bash
+  $ mvn clean verify sonar:sonar -Dsonar.login=<only-token>
   ```
